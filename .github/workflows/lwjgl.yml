@@ -56,6 +56,37 @@ jobs:
       - run: aws s3 cp ${{matrix.HOST}}/.libs/libffi_convenience.a s3://lwjgl-build/nightly/linux/${{matrix.ARCH}}/core/libffi.a $S3_PARAMS
         name: Upload artifact
 
+  linux-musl:
+    name: Linux Musl
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:3
+    strategy:
+      fail-fast: false
+      matrix:
+        ARCH: [x64]
+        include:
+          - ARCH: x64
+            HOST: x86_64-pc-linux-musl
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 3
+      - run: |
+          apk add build-base aws-cli
+        name: Install build dependencies
+      - run: apk add autoconf automake libtool texinfo linux-headers
+        name: Install libffi dependencies
+      - run: |
+          ./autogen.sh
+          ./configure --disable-shared --with-pic --host=${{matrix.HOST}} || cat */config.log
+        name: Configure build
+      - run: |
+          make
+        name: Build
+      - run: aws s3 cp ${{matrix.HOST}}/.libs/libffi_convenience.a s3://lwjgl-build/nightly/linux-musl/${{matrix.ARCH}}/core/libffi.a $S3_PARAMS
+        name: Upload artifact
+
   linux-cross:
     name: Linux Cross
     runs-on: ubuntu-latest
